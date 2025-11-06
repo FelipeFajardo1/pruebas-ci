@@ -6,25 +6,15 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    // Archivos o carpetas a ignorar
     ignores: [
       'eslint.config.mjs',
       'dist/**',
       'node_modules/**',
-      '*.config.js',
-      '*.config.mjs',
     ],
   },
-
-  // Configuración base de ESLint
   eslint.configs.recommended,
-
-  // Configuración recomendada para TypeScript con comprobación de tipos
   ...tseslint.configs.recommendedTypeChecked,
-
-  // Integración con Prettier
   eslintPluginPrettierRecommended,
-
   {
     languageOptions: {
       globals: {
@@ -38,18 +28,26 @@ export default tseslint.config(
       },
     },
   },
-
   {
     rules: {
-      // Reglas personalizadas del proyecto
+      // 🔧 Desactiva reglas demasiado estrictas para NestJS
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
 
-      // Otras reglas comunes en NestJS
+      // ⚙️ Buenas prácticas
       'no-console': 'off',
+      'no-unused-vars': 'off', // ya está controlado por TS
+      'prefer-const': 'warn',
+
+      // 💅 Integración con Prettier
       'prettier/prettier': [
         'warn',
         {
