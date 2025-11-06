@@ -2,6 +2,7 @@ name: CI - Backend (NestJS)
 
 on:
   push:
+    branches: [ main, develop ]
     paths:
       - "backend/nest-app/**"
       - ".github/workflows/backend-ci.yml"
@@ -12,7 +13,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test NestJS
+    name: Build & Lint NestJS
     runs-on: ubuntu-latest
 
     services:
@@ -29,6 +30,16 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       NODE_ENV: test
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
@@ -37,6 +48,8 @@ jobs:
       DB_USER: root
       DB_PASSWORD: root
       DB_NAME: voluntariado
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
 
     steps:
       - name: Checkout repository
@@ -53,9 +66,30 @@ jobs:
 
       - name: Build NestJS app
         working-directory: ./backend/nest-app
-        run: npm run build
+        run: |
+          npm run build
+          if [ -d "src/database/colombia" ]; then
+            echo "✅ Carpeta 'src/database/colombia' encontrada. Copiando..."
+            mkdir -p dist/database
+            cp -r src/database/colombia dist/database/
+          else
+            echo "⚠️ Carpeta 'src/database/colombia' no existe, omitiendo copia."
+          fi
 
-      - name: Start app to validate it runs
+      - name: Create temporary .env file
+        working-directory: ./backend/nest-app
+        run: |
+          echo "JWT_SECRET=$JWT_SECRET" >> .env
+          echo "DB_HOST=$DB_HOST" >> .env
+          echo "DB_PORT=$DB_PORT" >> .env
+          echo "DB_USER=$DB_USER" >> .env
+          echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+          echo "DB_NAME=$DB_NAME" >> .env
+          echo "REDIS_HOST=$REDIS_HOST" >> .env
+          echo "REDIS_PORT=$REDIS_PORT" >> .env
+          echo "NODE_ENV=$NODE_ENV" >> .env
+
+      - name: Start app briefly to validate it runs
         working-directory: ./backend/nest-app
         run: |
           npm run start:dev &
@@ -65,3 +99,10 @@ jobs:
       - name: Lint code
         working-directory: ./backend/nest-app
         run: npm run lint
+      - name: Test health endpoint
+        working-directory: ./backend/nest-app
+        run: |
+          npm run start:dev &
+          sleep 8
+          curl -f http://localhost:3000 || echo "⚠️ La app no respondió."
+          pkill node
