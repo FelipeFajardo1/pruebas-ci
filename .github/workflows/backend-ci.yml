@@ -89,9 +89,11 @@ jobs:
           echo "NODE_ENV=$NODE_ENV" >> .env
 
       - name: Build NestJS project
+        working-directory: ./backend/nest-app
         run: npm run build
 
       - name: Run tests (if any)
+        working-directory: ./backend/nest-app
         run: npm test --if-present
 
 
