@@ -2,7 +2,6 @@ name: CI - Backend (NestJS)
 
 on:
   push:
-    branches: [ main, develop ]
     paths:
       - "backend/nest-app/**"
       - ".github/workflows/backend-ci.yml"
@@ -89,12 +88,12 @@ jobs:
           echo "REDIS_PORT=$REDIS_PORT" >> .env
           echo "NODE_ENV=$NODE_ENV" >> .env
 
-      - name: Start app briefly to validate it runs
-        working-directory: ./backend/nest-app
-        run: |
-          npm run start:dev &
-          sleep 10
-          pkill node
+      - name: Build NestJS project
+        run: npm run build
+
+      - name: Run tests (if any)
+        run: npm test --if-present
+
 
       - name: Lint code
         working-directory: ./backend/nest-app
