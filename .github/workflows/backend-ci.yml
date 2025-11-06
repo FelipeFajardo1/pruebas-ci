@@ -1,0 +1,67 @@
+name: CI - Backend (NestJS)
+
+on:
+  push:
+    paths:
+      - "backend/nest-app/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/nest-app/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  build-and-test:
+    name: Build & Test NestJS
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: voluntariado
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: voluntariado
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ./backend/nest-app
+        run: npm ci
+
+      - name: Build NestJS app
+        working-directory: ./backend/nest-app
+        run: npm run build
+
+      - name: Start app to validate it runs
+        working-directory: ./backend/nest-app
+        run: |
+          npm run start:dev &
+          sleep 10
+          pkill node
+
+      - name: Lint code
+        working-directory: ./backend/nest-app
+        run: npm run lint
